@@ -71,6 +71,7 @@ build_kernel(){
     echo "------------------------------";
 
     make $FINAL_KERNEL_BUILD_PARA || { echo "Kernel build failed!"; exit 1; };
+    make $FINAL_KERNEL_BUILD_PARA dtbo.img || { echo "dtbo build failed!"; exit 1; };
     END_SEC=$(date +%s);
     COST_SEC=$[ $END_SEC-$START_SEC ];
     echo "Kernel Build Costed $(($COST_SEC/60))min $(($COST_SEC%60))s"

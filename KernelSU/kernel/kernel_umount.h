@@ -9,6 +9,10 @@ void ksu_kernel_umount_init(void);
 void ksu_kernel_umount_exit(void);
 
 void try_umount(const char *mnt, int flags);
+void ksu_try_umount(const char *mnt, bool check_mnt, int flags, uid_t uid);
+#ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
+void susfs_try_umount_all(uid_t uid);
+#endif
 
 // Handler function to be called from setresuid hook
 int ksu_handle_umount(uid_t old_uid, uid_t new_uid);

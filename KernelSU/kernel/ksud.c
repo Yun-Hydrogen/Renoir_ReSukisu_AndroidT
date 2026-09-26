@@ -62,6 +62,7 @@ static struct work_struct stop_execve_hook_work;
 static struct work_struct stop_input_hook_work;
 #else
 bool ksu_vfs_read_hook __read_mostly = true;
+bool ksu_init_rc_hook __read_mostly = true;
 bool ksu_execveat_hook __read_mostly = true;
 bool ksu_input_hook __read_mostly = true;
 #endif
@@ -276,6 +277,20 @@ int ksu_handle_execveat_ksud(int *fd, struct filename **filename_ptr,
         stop_execve_hook();
     }
 
+    return 0;
+}
+
+int ksu_handle_execveat(int *fd, struct filename **filename_ptr, void *argv,
+                        void *envp, int *flags)
+{
+    return ksu_handle_execveat_ksud(fd, filename_ptr,
+                                    (struct user_arg_ptr *)argv,
+                                    (struct user_arg_ptr *)envp, flags);
+}
+
+int ksu_handle_post_execveat(int *fd, struct filename **filename_ptr, void *argv,
+                             void *envp, int *flags, int *retval)
+{
     return 0;
 }
 
@@ -559,6 +574,7 @@ static void stop_vfs_read_hook()
     pr_info("unregister vfs_read kprobe: %d!\n", ret);
 #else
     ksu_vfs_read_hook = false;
+    ksu_init_rc_hook = false;
     pr_info("stop vfs_read_hook\n");
 #endif
 }
