@@ -11,6 +11,11 @@
 #
 #  Add clang to your PATH before using this script.
 #
+if ! which clang >/dev/null 2>&1; then
+    if [ -d "$HOME/toolchain/proton-clang/bin" ]; then
+        export PATH="$HOME/toolchain/proton-clang/bin:$PATH"
+    fi
+fi
 
 TARGET_ARCH=arm64;
 TARGET_CC=clang;
@@ -21,6 +26,7 @@ THREAD=$(nproc --all);
 CC_ADDITIONAL_FLAGS="LLVM_IAS=1 LLVM=1";
 TARGET_OUT="../out";
 TARGET_DEVICE=renoir
+KSOURCE="$(pwd)"
 
 export TARGET_PRODUCT=$TARGET_DEVICE
 
@@ -93,18 +99,25 @@ generate_flashable(){
     cp -r $TARGET_KERNEL_FILE $ANYKERNEL_PATH/;
     cp -r $TARGET_KERNEL_DTB $ANYKERNEL_PATH/;
     cp -r $TARGET_KERNEL_DTBO $ANYKERNEL_PATH/;
-    cp -r $TARGET_VENDOR_DLKM $ANYKERNEL_PATH/;
-    for item in ${REC_RES[*]}; do
-        find vendor_dlkm/ -name $item -exec cp {} ./ak3/vendor_ramdisk/lib/modules \;
-    done
+    if [ -f "$TARGET_VENDOR_DLKM" ]; then
+        cp -r $TARGET_VENDOR_DLKM $ANYKERNEL_PATH/;
+    fi
+    if [ -d vendor_dlkm ]; then
+        for item in ${REC_RES[*]}; do
+            find vendor_dlkm/ -name $item -exec cp {} ./ak3/vendor_ramdisk/lib/modules \;
+        done
+    fi
 
     echo ' Packaging flashable Kernel ';
     cd $ANYKERNEL_PATH;
-    zip -q -r $TARGET_KERNEL_NAME-$CURRENT_TIME-$TARGET_KERNEL_MOD_VERSION.zip *;
+    ZIP_NAME="$TARGET_KERNEL_NAME-$CURRENT_TIME-$TARGET_KERNEL_MOD_VERSION.zip"
+    zip -q -r "$ZIP_NAME" *;
 
-   echo " Target File:  $TARGET_OUT/$ANYKERNEL_PATH/$TARGET_KERNEL_NAME-$CURRENT_TIME-$TARGET_KERNEL_MOD_VERSION.zip ";
+    echo " Target File: $(pwd)/$ZIP_NAME ";
+    cp "$ZIP_NAME" "$KSOURCE/";
+    echo " Flashable zip ready: $KSOURCE/$ZIP_NAME ";
 
-   cd $KSOURCE
+    cd "$KSOURCE";
 }
 
 save_defconfig(){
@@ -186,7 +199,9 @@ build_vendor_dlkm(){
 
 use_prebuilt_dlkm(){
     DLKM_BUILD_PATH=/srv/media/WD/pe/out/target/product/renoir/obj/PACKAGING/target_files_intermediates/aosp_renoir-target_files-eng.credits/IMAGES/
-    cp $DLKM_BUILD_PATH/$TARGET_VENDOR_DLKM $TARGET_OUT
+    if [ -f "$DLKM_BUILD_PATH/$TARGET_VENDOR_DLKM" ]; then
+        cp $DLKM_BUILD_PATH/$TARGET_VENDOR_DLKM $TARGET_OUT
+    fi
 }
 
 ksu_prepare(){
