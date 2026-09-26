@@ -84,19 +84,30 @@ generate_flashable(){
     echo "------------------------------";
 
     AK3_PATH=$TARGET_OUT/ak3
+    REC_RES=(focaltech_touch.ko goodix_core.ko hwid.ko msm_drm.ko xiaomi_touch.ko)
  
     echo ' Removing old package file ';
     rm -rf $AK3_PATH;
 
     echo ' Getting AnyKernel ';
     cp -r ./tools/ak3 $AK3_PATH;
-    rm -rf $AK3_PATH/vendor_ramdisk
+    mkdir -p $TARGET_OUT/./ak3/vendor_ramdisk/lib/modules
 
     cd $TARGET_OUT;
     ANYKERNEL_PATH=./ak3
 
     echo ' Copying Kernel File '; 
     cp -r $TARGET_KERNEL_FILE $ANYKERNEL_PATH/;
+    cp -r $TARGET_KERNEL_DTB $ANYKERNEL_PATH/;
+    cp -r $TARGET_KERNEL_DTBO $ANYKERNEL_PATH/;
+    if [ -f "$TARGET_VENDOR_DLKM" ]; then
+        cp -r $TARGET_VENDOR_DLKM $ANYKERNEL_PATH/;
+    fi
+    if [ -d vendor_dlkm ]; then
+        for item in ${REC_RES[*]}; do
+            find vendor_dlkm/ -name $item -exec cp {} ./ak3/vendor_ramdisk/lib/modules \;
+        done
+    fi
 
     echo ' Packaging flashable Kernel ';
     cd $ANYKERNEL_PATH;

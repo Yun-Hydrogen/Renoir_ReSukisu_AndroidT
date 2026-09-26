@@ -1343,10 +1343,9 @@ static int check_version(const struct load_info *info,
 	return 1;
 
 bad_version:
-	pr_warn("%s: disagrees about version of symbol %s, bypassed\n",
+	pr_warn("%s: disagrees about version of symbol %s\n",
 	       info->name, symname);
-	add_taint_module(mod, TAINT_OOT_MODULE, LOCKDEP_STILL_OK);
-	return 1;
+	return 0;
 }
 
 static inline int check_modstruct_version(const struct load_info *info,
@@ -3276,9 +3275,9 @@ static int check_modinfo(struct module *mod, struct load_info *info, int flags)
 		if (err)
 			return err;
 	} else if (!same_magic(modmagic, vermagic, info->index.vers)) {
-		pr_warn("%s: version magic '%s' should be '%s', bypassed\n",
+		pr_err("%s: version magic '%s' should be '%s'\n",
 		       info->name, modmagic, vermagic);
-		add_taint_module(mod, TAINT_OOT_MODULE, LOCKDEP_STILL_OK);
+		return -ENOEXEC;
 	}
 
 	if (!get_modinfo(info, "intree")) {
