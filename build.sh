@@ -62,7 +62,7 @@ make_defconfig(){
     echo " Building Kernel Defconfig..";
     echo "------------------------------";
 
-    make $FINAL_KERNEL_BUILD_PARA $DEFCONFIG_NAME;
+    make $FINAL_KERNEL_BUILD_PARA $DEFCONFIG_NAME || { echo "Defconfig generation failed!"; exit 1; };
 }
 
 build_kernel(){
@@ -70,7 +70,7 @@ build_kernel(){
     echo " Building Kernel ...........";
     echo "------------------------------";
 
-    make $FINAL_KERNEL_BUILD_PARA;
+    make $FINAL_KERNEL_BUILD_PARA || { echo "Kernel build failed!"; exit 1; };
     END_SEC=$(date +%s);
     COST_SEC=$[ $END_SEC-$START_SEC ];
     echo "Kernel Build Costed $(($COST_SEC/60))min $(($COST_SEC%60))s"
