@@ -9,15 +9,21 @@
 #include "linux/lsm_audit.h" // IWYU pragma: keep
 #include "xfrm.h"
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 13, 0)
 #define SELINUX_POLICY_INSTEAD_SELINUX_SS
+#endif
 
 #define ALL NULL
 
 static struct policydb *get_policydb(void)
 {
     struct policydb *db;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 13, 0)
     struct selinux_policy *policy = selinux_state.policy;
     db = &policy->policydb;
+#else
+    db = &selinux_state.ss->policydb;
+#endif
     return db;
 }
 

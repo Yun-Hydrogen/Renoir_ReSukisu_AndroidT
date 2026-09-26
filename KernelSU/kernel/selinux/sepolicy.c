@@ -523,6 +523,7 @@ static bool add_filename_trans(struct policydb *db, const char *s,
         return false;
     }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0)
     struct filename_trans_key key;
     key.ttype = tgt->value;
     key.tclass = cls->value;
@@ -560,6 +561,43 @@ static bool add_filename_trans(struct policydb *db, const char *s,
 
     db->compat_filename_trans_count++;
     return ebitmap_set_bit(&trans->stypes, src->value - 1, 1) == 0;
+#else
+    struct filename_trans key;
+    key.stype = src->value;
+    key.ttype = tgt->value;
+    key.tclass = cls->value;
+    key.name = o;
+
+    struct filename_trans_datum *trans = hashtab_search(db->filename_trans, &key);
+    if (trans) {
+        trans->otype = def->value;
+        return true;
+    }
+
+    struct filename_trans *new_key = kzalloc(sizeof(*new_key), GFP_ATOMIC);
+    if (!new_key)
+        return false;
+    struct filename_trans_datum *new_datum = kzalloc(sizeof(*new_datum), GFP_ATOMIC);
+    if (!new_datum) {
+        kfree(new_key);
+        return false;
+    }
+
+    new_key->stype = src->value;
+    new_key->ttype = tgt->value;
+    new_key->tclass = cls->value;
+    new_key->name = kstrdup(o, GFP_ATOMIC);
+    new_datum->otype = def->value;
+
+    ebitmap_set_bit(&db->filename_trans_ttypes, tgt->value, 1);
+    if (hashtab_insert(db->filename_trans, new_key, new_datum)) {
+        kfree(new_key->name);
+        kfree(new_key);
+        kfree(new_datum);
+        return false;
+    }
+    return true;
+#endif
 }
 
 static bool add_genfscon(struct policydb *db, const char *fs_name,

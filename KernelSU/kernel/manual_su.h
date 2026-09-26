@@ -5,9 +5,7 @@
 #include <linux/sched.h>
 #include <linux/version.h>
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 7, 0)
-#define mmap_lock mmap_sem
-#endif
+// mmap_lock is already backported into this kernel tree
 
 #define ksu_task_is_dead(t) ((t)->exit_state != 0)
 
