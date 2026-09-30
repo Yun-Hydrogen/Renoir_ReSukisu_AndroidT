@@ -12,9 +12,13 @@
 # Add clang to your PATH before using this script.
 #
 
+if [ -d "/home/yunhydrogenp/toolchain/proton-clang/bin" ]; then
+    export PATH="/home/yunhydrogenp/toolchain/proton-clang/bin:$PATH"
+fi
+
 TARGET_ARCH=arm64;
 TARGET_CC=clang;
-TRAGET_CLANG_TRIPLE=aarch64-linux-gnu-;
+TARGET_CLANG_TRIPLE=aarch64-linux-gnu-;
 TARGET_CROSS_COMPILE=aarch64-linux-gnu-;
 TARGET_CROSS_COMPILE_COMPAT=arm-linux-gnueabi-;
 THREAD=$(nproc --all);
@@ -27,13 +31,13 @@ FINAL_KERNEL_BUILD_PARA="ARCH=$TARGET_ARCH \
                          CROSS_COMPILE_COMPAT=$TARGET_CROSS_COMPILE_COMPAT \
                          CLANG_TRIPLE=$TARGET_CLANG_TRIPLE \
                          $CC_ADDITIONAL_FLAGS \
-                         -j$THREAD
+                         -j$THREAD \
                          O=$TARGET_OUT";
 
 TARGET_KERNEL_FILE=arch/arm64/boot/Image;
 TARGET_KERNEL_DTB=arch/arm64/boot/dtb;
 TARGET_KERNEL_DTBO=arch/arm64/boot/dtbo.img
-TARGET_KERNEL_NAME=DSixteen;
+TARGET_KERNEL_NAME=Kernel-ReSukiSU-SUSFS;
 TARGET_KERNEL_MOD_VERSION=$(make kernelversion)
 
 ANYKERNEL_PATH=anykernel
@@ -52,7 +56,7 @@ make_defconfig(){
     echo " Building Kernel Defconfig..";
     echo "------------------------------";
 
-    make $FINAL_KERNEL_BUILD_PARA $DEFCONFIG_NAME;
+    make $FINAL_KERNEL_BUILD_PARA $DEFCONFIG_NAME || exit 1;
 }
 
 build_kernel(){
@@ -60,7 +64,7 @@ build_kernel(){
     echo " Building Kernel ...........";
     echo "------------------------------";
 
-    make $FINAL_KERNEL_BUILD_PARA;
+    make $FINAL_KERNEL_BUILD_PARA || exit 1;
     END_SEC=$(date +%s);
     COST_SEC=$[ $END_SEC-$START_SEC ];
     echo "Kernel Build Costed $(($COST_SEC/60))min $(($COST_SEC%60))s"
