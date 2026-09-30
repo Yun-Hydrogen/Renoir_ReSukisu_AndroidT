@@ -44,6 +44,7 @@
 *.tab.[ch]
 *.tar
 *.xz
+*.zip
 Module.symvers
 modules.builtin
 modules.order
