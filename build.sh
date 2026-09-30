@@ -64,6 +64,7 @@ build_kernel(){
     echo " Building Kernel ...........";
     echo "------------------------------";
 
+    touch .scmversion
     make $FINAL_KERNEL_BUILD_PARA || exit 1;
     END_SEC=$(date +%s);
     COST_SEC=$[ $END_SEC-$START_SEC ];
