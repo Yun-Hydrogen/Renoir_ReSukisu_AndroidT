@@ -134,19 +134,25 @@ int ksu_handle_setresuid(uid_t ruid, uid_t euid, uid_t suid)
         ksu_clear_task_tracepoint_flag_if_needed(current);
     }
 #else
+    if (ksu_get_manager_uid() == new_uid || is_manager()) {
+        pr_info("install fd for ksu manager(uid=%d)\n", new_uid);
+        ksu_install_fd();
+        spin_lock_irq(&current->sighand->siglock);
+        disable_seccomp();
+        ksu_set_task_tracepoint_flag(current);
+        spin_unlock_irq(&current->sighand->siglock);
+        return 0;
+    }
+
     if (ksu_is_allow_uid_for_current(new_uid)) {
-		spin_lock_irq(&current->sighand->siglock);
-		disable_seccomp();
-		spin_unlock_irq(&current->sighand->siglock);
-
-		if (ksu_get_manager_uid() == new_uid) {
-			pr_info("install fd for ksu manager(uid=%d)\n",
-				new_uid);
-			ksu_install_fd();
-		}
-
-		return 0;
-	}
+        spin_lock_irq(&current->sighand->siglock);
+        disable_seccomp();
+        ksu_set_task_tracepoint_flag(current);
+        spin_unlock_irq(&current->sighand->siglock);
+        return 0;
+    } else {
+        ksu_clear_task_tracepoint_flag_if_needed(current);
+    }
 #endif
 
     // Handle kernel umount
