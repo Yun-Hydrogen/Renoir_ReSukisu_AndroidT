@@ -2,6 +2,8 @@
 #define __KSU_H_KLOG
 
 #include <linux/printk.h>
+#include <linux/sched.h>
+#include <linux/sched/task.h>
 
 #ifdef pr_fmt
 #undef pr_fmt
