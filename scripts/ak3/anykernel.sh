@@ -4,7 +4,7 @@
 ### AnyKernel setup
 # global properties
 properties() { '
-kernel.string=Kernel for DEVICE_PLACEHOLDER by llit @ Github
+kernel.string=Mi 11 Lite 5G [Renoir] ReSuKiSU Kernel by YunHydrogen (Yun-Hydrogen@Github) and all upstream contributors.
 do.devicecheck=0
 do.modules=0
 do.systemless=1
@@ -31,6 +31,15 @@ PATCH_VBMETA_FLAG=auto;
 
 # import functions/variables and setup patching - see for reference (DO NOT REMOVE)
 . tools/ak3-core.sh;
+
+ui_print " ";
+ui_print "-ReSukiSU supported";
+ui_print "-SUSFS supported";
+ui_print "-KVM supported";
+ui_print "-KPM You can patched it automatically by ReSukiSU Manager";
+ui_print " ";
+ui_print "Android System Alert after startup the device, just ignore it.";
+ui_print " ";
 
 # boot install
 dump_boot; # use split_boot to skip ramdisk unpack, e.g. for devices with init_boot ramdisk
