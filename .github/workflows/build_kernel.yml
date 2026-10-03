@@ -1,0 +1,136 @@
+name: Build ReSukiSU Kernel
+
+on:
+  workflow_dispatch:
+    inputs:
+      device:
+        description: 'Target device codename'
+        required: true
+        default: 'renoir'
+        type: string
+      build_type:
+        description: 'Build option'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'kernelonly'
+      create_release:
+        description: 'Publish build artifacts to GitHub Releases'
+        required: false
+        default: false
+        type: boolean
+  push:
+    branches:
+      - resukisu_next
+      - ReSukiSU
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'LICENSE'
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build Kernel (${{ inputs.device || 'renoir' }})
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Kernel Source
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+          fetch-depth: 1
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            bc bison build-essential ccache curl flex git libssl-dev \
+            libncurses5-dev libncursesw5-dev libtinfo5 zip zlib1g-dev \
+            cpio python3 python-is-python3
+
+      - name: Setup Proton-Clang Toolchain
+        run: |
+          echo "Cloning Proton-Clang 13 toolchain..."
+          git clone --depth=1 https://github.com/kdrag0n/proton-clang.git toolchain/proton-clang
+          echo "$GITHUB_WORKSPACE/toolchain/proton-clang/bin" >> $GITHUB_PATH
+
+      - name: Verify Environment & Submodule
+        run: |
+          export PATH="$GITHUB_WORKSPACE/toolchain/proton-clang/bin:$PATH"
+          clang --version
+          ld.lld --version
+          echo "=== Git Submodule Status ==="
+          git submodule status
+
+      - name: Lock Kernel Release to -qgki
+        run: |
+          touch .scmversion
+
+      - name: Build Kernel & AnyKernel3 Package
+        run: |
+          chmod +x build.sh
+          BUILD_OPT="${{ inputs.build_type || 'all' }}"
+          TARGET_DEV="${{ inputs.device || 'renoir' }}"
+          echo "Building with command: ./build.sh $BUILD_OPT $TARGET_DEV"
+          ./build.sh "$BUILD_OPT" "$TARGET_DEV"
+
+      - name: Prepare Artifacts
+        id: prepare_artifacts
+        run: |
+          mkdir -p release_artifacts
+          if ls ../out/anykernel/*.zip 1> /dev/null 2>&1; then
+            cp ../out/anykernel/*.zip release_artifacts/
+            ZIP_NAME=$(basename $(ls ../out/anykernel/*.zip | head -n 1))
+            echo "zip_name=$ZIP_NAME" >> $GITHUB_OUTPUT
+          fi
+          if [ -f "../out/arch/arm64/boot/Image" ]; then
+            cp ../out/arch/arm64/boot/Image release_artifacts/
+          fi
+          if [ -f "../out/arch/arm64/boot/dtbo.img" ]; then
+            cp ../out/arch/arm64/boot/dtbo.img release_artifacts/
+          fi
+          BUILD_DATE=$(date +'%Y%m%d_%H%M%S')
+          echo "build_date=$BUILD_DATE" >> $GITHUB_OUTPUT
+          echo "=== Output Artifacts ==="
+          ls -lh release_artifacts/
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ReSukiSU-Kernel-${{ inputs.device || 'renoir' }}-${{ steps.prepare_artifacts.outputs.build_date }}
+          path: release_artifacts/*
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: ${{ inputs.create_release == true || github.event_name == 'release' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.release.tag_name || format('v{0}', steps.prepare_artifacts.outputs.build_date) }}
+          name: ${{ github.event.release.name || format('ReSukiSU Kernel for Renoir ({0})', steps.prepare_artifacts.outputs.build_date) }}
+          draft: false
+          prerelease: false
+          files: release_artifacts/*
+          body: |
+            ## Mi 11 Lite 5G [Renoir] ReSukiSU Kernel
+            Built by GitHub Actions.
+
+            ### Included Features
+            - **ReSukiSU supported**: Multi-manager & native upstream ReSukiSU support
+            - **SUSFS v2.3.0 supported**: Upgraded to latest SUSFS v2.3.0 with matching inline hooks
+            - **KVM supported**: Hardware virtualization enabled (`CONFIG_KVM=y`, `/dev/kvm`)
+            - **KPM supported**: Kernel Patch Module patchable via ReSukiSU Manager
+            - **Strict Localversion**: Locked to `-qgki` (`Linux 5.4.268-qgki`)
+            - **Toolchain**: Proton-Clang 13.0.0
+
+            ### Flash Instructions
+            1. Download the AnyKernel3 flashable zip.
+            2. Flash in Recovery (TWRP / OrangeFox).
+            3. Reboot system. If an Android System Alert popup appears after startup, ignore it.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

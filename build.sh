@@ -12,7 +12,11 @@
 # Add clang to your PATH before using this script.
 #
 
-if [ -d "/home/yunhydrogenp/toolchain/proton-clang/bin" ]; then
+if [ -d "$PWD/toolchain/proton-clang/bin" ]; then
+    export PATH="$PWD/toolchain/proton-clang/bin:$PATH"
+elif [ -d "$HOME/toolchain/proton-clang/bin" ]; then
+    export PATH="$HOME/toolchain/proton-clang/bin:$PATH"
+elif [ -d "/home/yunhydrogenp/toolchain/proton-clang/bin" ]; then
     export PATH="/home/yunhydrogenp/toolchain/proton-clang/bin:$PATH"
 fi
 
